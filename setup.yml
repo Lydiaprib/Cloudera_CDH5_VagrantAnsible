@@ -1,22 +1,20 @@
 ---
-- hosts: default
+- hosts: all
   remote_user: vagrant
   become: yes
   tasks:
-    # - name: Install unzip
-    #   apt: pkg=unzip state=latest update_cache=yes
-      
+
     - name: Install java
       apt:
         update_cache: yes
         name: openjdk-7-jre-headless
         state: present
 
-    # - name: Add a line to a file
-    #   lineinfile:
-    #     path: /etc/default/bsdmainutils
-    #     line: export JAVA_HOME=/usr/java/jdk.1.7.0_80
-
+    - name: Set java home
+      lineinfile:
+        path: /etc/default/bigtop-utils
+        line: export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
+        create: yes
 
     - name: Download CDH5 package
       get_url:
@@ -25,23 +23,8 @@
         force_basic_auth: yes
 
     - name: Install CDH5 repository
-      command: dpkg -i /vagrant/cdh5-repository_1.0_all.deb
-
-    #- name: Install cdh5-repository.deb
-    #  apt:
-    #    deb: /vagrant/cdh5-repository_1.0_all.deb
-
-
-    # - name: Install CDH5 repository
-    #   dpkg_selections:
-    #     name: cdh5-repository_1.0_all.deb
-    #     selection: install
-
-    # - name: Install curl
-    #   apt: pkg=curl state=latest update_cache=yes
-    
-    # - name: Add Cloudera repository
-    #   command: curl -s http://archive.cloudera.com/cdh5/ubuntu/precise/amd64/cdh/archive.key | sudo apt-key add -
+      apt:
+        deb: /vagrant/cdh5-repository_1.0_all.deb
 
     - name: Add Cloudera repository
       apt_key:
@@ -51,29 +34,16 @@
       apt:
         update_cache: yes
         force_apt_get: yes
-
-    # - name: Install CDH
-    #   command: sudo apt-get install hadoop-0.20-conf-pseudo
     
     - name: Install hadoop
       apt: 
         name: hadoop-0.20-conf-pseudo 
-        state: latest 
-        # update_cache: yes
-
-#---------------------------------------------------------------------------------------------------------
-
-    # - name: View HD files
-    #   command: dpkg -L hadoop-0.20-conf-pseudo
+        state: latest
 
     - name: Format the file system
       command: sudo -u hdfs hdfs namenode -format
 
-    # - name: Start HDFS
-    #   command: for x in `cd /etc/init.d ; ls hadoop-hdfs-*` ; do sudo service $x start ; done
-    
-    # Ver si pueden lanzarse todos los servicios en un mismo comando
-    - name: Start HDF services
+    - name: Start HDFS services
       service:
         name: "{{ item }}"
         state: started
@@ -81,29 +51,19 @@
         - hadoop-hdfs-datanode
         - hadoop-hdfs-namenode
         - hadoop-hdfs-secondarynamenode
-    
-  #  - name: Start HDF service (namenode)
-  #    service:
-  #      name: hadoop-hdfs-namenode
-  #      state: started
 
-  #  - name: Start HDF service (secondarynamenode)
-  #    service:
-  #      name: hadoop-hdfs-secondarynamenode
-  #      state: started
+    - name: Create /tmp directory
+      command: sudo -u hdfs hadoop fs -mkdir -p /tmp
 
-    # - name: Create /tmp directory
-    #   command: sudo -u hdfs hadoop fs -mkdir -p /tmp
+    - name: Set permissions
+      command: sudo -u hdfs hadoop fs -chmod -R 1777 /tmp
 
-    # - name: Set permissions
-    #   command: sudo -u hdfs hadoop fs -chmod -R 1777 /tmp
-
-    # - name: Create the MapReduce system directories
-    #   command:
-    #     argv:
-    #       - sudo -u hdfs hadoop fs -mkdir -p /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
-    #       - sudo -u hdfs hadoop fs -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
-    #       - sudo -u hdfs hadoop fs -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred
+    - name: Create the MapReduce system directories
+      command:
+        argv:
+          - sudo -u hdfs hadoop fs -mkdir -p /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
+          - sudo -u hdfs hadoop fs -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
+          - sudo -u hdfs hadoop fs -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred
 
 
     # Ver si se pueden crear todos los directorios en un mismo comando
