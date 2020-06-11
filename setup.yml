@@ -1,0 +1,171 @@
+---
+- hosts: default
+  remote_user: vagrant
+  become: yes
+  tasks:
+    # - name: Install unzip
+    #   apt: pkg=unzip state=latest update_cache=yes
+      
+    - name: Install java
+      apt:
+        update_cache: yes
+        name: openjdk-7-jre-headless
+        state: present
+
+    # - name: Add a line to a file
+    #   lineinfile:
+    #     path: /etc/default/bsdmainutils
+    #     line: export JAVA_HOME=/usr/java/jdk.1.7.0_80
+
+
+    - name: Download CDH5 package
+      get_url:
+        url: http://archive.cloudera.com/cdh5/one-click-install/precise/amd64/cdh5-repository_1.0_all.deb
+        dest: /vagrant
+        force_basic_auth: yes
+
+    - name: Install CDH5 repository
+      command: dpkg -i /vagrant/cdh5-repository_1.0_all.deb
+
+    #- name: Install cdh5-repository.deb
+    #  apt:
+    #    deb: /vagrant/cdh5-repository_1.0_all.deb
+
+
+    # - name: Install CDH5 repository
+    #   dpkg_selections:
+    #     name: cdh5-repository_1.0_all.deb
+    #     selection: install
+
+    # - name: Install curl
+    #   apt: pkg=curl state=latest update_cache=yes
+    
+    # - name: Add Cloudera repository
+    #   command: curl -s http://archive.cloudera.com/cdh5/ubuntu/precise/amd64/cdh/archive.key | sudo apt-key add -
+
+    - name: Add Cloudera repository
+      apt_key:
+        url: http://archive.cloudera.com/cdh5/ubuntu/precise/amd64/cdh/archive.key
+
+    - name: Update apt packages
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+
+    # - name: Install CDH
+    #   command: sudo apt-get install hadoop-0.20-conf-pseudo
+    
+    - name: Install hadoop
+      apt: 
+        name: hadoop-0.20-conf-pseudo 
+        state: latest 
+        # update_cache: yes
+
+#---------------------------------------------------------------------------------------------------------
+
+    # - name: View HD files
+    #   command: dpkg -L hadoop-0.20-conf-pseudo
+
+    - name: Format the file system
+      command: sudo -u hdfs hdfs namenode -format
+
+    # - name: Start HDFS
+    #   command: for x in `cd /etc/init.d ; ls hadoop-hdfs-*` ; do sudo service $x start ; done
+    
+    # Ver si pueden lanzarse todos los servicios en un mismo comando
+    - name: Start HDF services
+      service:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - hadoop-hdfs-datanode
+        - hadoop-hdfs-namenode
+        - hadoop-hdfs-secondarynamenode
+    
+  #  - name: Start HDF service (namenode)
+  #    service:
+  #      name: hadoop-hdfs-namenode
+  #      state: started
+
+  #  - name: Start HDF service (secondarynamenode)
+  #    service:
+  #      name: hadoop-hdfs-secondarynamenode
+  #      state: started
+
+    # - name: Create /tmp directory
+    #   command: sudo -u hdfs hadoop fs -mkdir -p /tmp
+
+    # - name: Set permissions
+    #   command: sudo -u hdfs hadoop fs -chmod -R 1777 /tmp
+
+    # - name: Create the MapReduce system directories
+    #   command:
+    #     argv:
+    #       - sudo -u hdfs hadoop fs -mkdir -p /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
+    #       - sudo -u hdfs hadoop fs -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
+    #       - sudo -u hdfs hadoop fs -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred
+
+
+    # Ver si se pueden crear todos los directorios en un mismo comando
+    # Ver si hay algún módulo para hdfs de ansible
+    # Ver tbn si haría falta ejecutar el sudo solo como usuario
+#     - name: Create MapReduce system directories (I)
+#       command: sudo -u hdfs hadoop fs -mkdir -p /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
+
+#     - name: Create MapReduce system directories (II)
+#       command: sudo -u hdfs hadoop fs -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
+    
+#     - name: Create MapReduce system directories (III)
+#       command: sudo -u hdfs hadoop fs -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred
+
+# # Start MapReduce
+# # for x in `cd /etc/init.d ; ls hadoop-0.20-mapreduce-*` ; do sudo service $x start ; done
+
+#     # Ver si pueden lanzarse todos los servicios en un mismo comando
+#     - name: Start MapReduce service (jobtracker)
+#       service:
+#         name: hadoop-0.20-mapreduce-jobtracker
+#         state: started
+
+#     - name: Start MapReduce service (tasktracker)
+#       service:
+#         name: hadoop-0.20-mapreduce-tasktracker
+#         state: started
+
+#     # Ver si se pueden crear todos los directorios en un mismo comando
+#     # Ver si hay algún módulo para hdfs de ansible
+#     # Ver tbn si haría falta ejecutar el sudo solo como usuario
+#     - name: Create user directories (I)
+#       command: sudo -u hdfs hadoop fs -mkdir -p /user/$USER
+
+#     - name: Create user directories (II)
+#       command: sudo -u hdfs hadoop fs -chown $USER /user/$USER
+
+
+
+
+## Probando un ejemplo
+
+# sudo -u hdfs hadoop fs -mkdir -p /user/joe
+# sudo -u hdfs hadoop fs -chown joe /user/joe
+
+# hadoop fs -mkdir input
+# hadoop fs -put /etc/hadoop/conf/*.xml input
+# hadoop fs -ls input
+
+# /usr/bin/hadoop jar /usr/lib/hadoop-0.20-mapreduce/hadoop-examples.jar grep input output 'dfs[a-z.]+'
+
+# hadoop fs -ls
+
+# hadoop fs -ls output
+# hadoop fs -cat output/part-00000 | head
+
+
+
+
+
+# sudo -u hdfs hadoop fs -mkdir -p /prueba
+# sudo -u hdfs hadoop fs -chmod -R 1777 /tmp
+# hadoop fs -put /vagrant/donquijote.txt /prueba
+# hadoop fs -ls /prueba
+# hadoop jar /vagrant/WordCountSimple/dprueba/WordCountSimple.jar /prueba /prueba/salida
