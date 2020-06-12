@@ -10,9 +10,12 @@ Vagrant.configure("2") do |config|
       ansible.host_key_checking = "false"
       ansible.limit = "all"
     end
+
     hdfs.vm.provider "virtualbox" do |vb|
       vb.customize ["modifyvm", :id, "--memory", "1500"]
     end
+
   end
+  
   config.vm.synced_folder "sync", "/vagrant", create: true
 end

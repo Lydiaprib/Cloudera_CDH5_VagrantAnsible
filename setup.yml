@@ -7,13 +7,13 @@
     - name: Install java
       apt:
         update_cache: yes
-        name: openjdk-7-jre-headless
+        name: openjdk-7-jdk
         state: present
 
     - name: Set java home
       lineinfile:
         path: /etc/default/bigtop-utils
-        line: export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
+        line: export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk-amd64
         create: yes
 
     - name: Download CDH5 package
@@ -55,77 +55,28 @@
     - name: Create /tmp directory
       command: sudo -u hdfs hadoop fs -mkdir -p /tmp
 
-    - name: Set permissions
+    - name: Set permissions for /tmp directory
       command: sudo -u hdfs hadoop fs -chmod -R 1777 /tmp
 
     - name: Create the MapReduce system directories
-      command:
-        argv:
-          - sudo -u hdfs hadoop fs -mkdir -p /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
-          - sudo -u hdfs hadoop fs -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
-          - sudo -u hdfs hadoop fs -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred
+      command: sudo -u hdfs hadoop fs -mkdir -p /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
 
+    - name: Set permissions for MapReduce system directories
+      command: sudo -u hdfs hadoop fs -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
 
-    # Ver si se pueden crear todos los directorios en un mismo comando
-    # Ver si hay algún módulo para hdfs de ansible
-    # Ver tbn si haría falta ejecutar el sudo solo como usuario
-#     - name: Create MapReduce system directories (I)
-#       command: sudo -u hdfs hadoop fs -mkdir -p /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
+    - name: Change owner for MapReduce system directories
+      command: sudo -u hdfs hadoop fs -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred
 
-#     - name: Create MapReduce system directories (II)
-#       command: sudo -u hdfs hadoop fs -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
-    
-#     - name: Create MapReduce system directories (III)
-#       command: sudo -u hdfs hadoop fs -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred
+    - name: Start MapReduce services
+      service:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - hadoop-0.20-mapreduce-jobtracker
+        - hadoop-0.20-mapreduce-tasktracker
 
-# # Start MapReduce
-# # for x in `cd /etc/init.d ; ls hadoop-0.20-mapreduce-*` ; do sudo service $x start ; done
+    - name: Create user directories for vagrant user
+      command: sudo -u hdfs hadoop fs -mkdir -p /user/$USER
 
-#     # Ver si pueden lanzarse todos los servicios en un mismo comando
-#     - name: Start MapReduce service (jobtracker)
-#       service:
-#         name: hadoop-0.20-mapreduce-jobtracker
-#         state: started
-
-#     - name: Start MapReduce service (tasktracker)
-#       service:
-#         name: hadoop-0.20-mapreduce-tasktracker
-#         state: started
-
-#     # Ver si se pueden crear todos los directorios en un mismo comando
-#     # Ver si hay algún módulo para hdfs de ansible
-#     # Ver tbn si haría falta ejecutar el sudo solo como usuario
-#     - name: Create user directories (I)
-#       command: sudo -u hdfs hadoop fs -mkdir -p /user/$USER
-
-#     - name: Create user directories (II)
-#       command: sudo -u hdfs hadoop fs -chown $USER /user/$USER
-
-
-
-
-## Probando un ejemplo
-
-# sudo -u hdfs hadoop fs -mkdir -p /user/joe
-# sudo -u hdfs hadoop fs -chown joe /user/joe
-
-# hadoop fs -mkdir input
-# hadoop fs -put /etc/hadoop/conf/*.xml input
-# hadoop fs -ls input
-
-# /usr/bin/hadoop jar /usr/lib/hadoop-0.20-mapreduce/hadoop-examples.jar grep input output 'dfs[a-z.]+'
-
-# hadoop fs -ls
-
-# hadoop fs -ls output
-# hadoop fs -cat output/part-00000 | head
-
-
-
-
-
-# sudo -u hdfs hadoop fs -mkdir -p /prueba
-# sudo -u hdfs hadoop fs -chmod -R 1777 /tmp
-# hadoop fs -put /vagrant/donquijote.txt /prueba
-# hadoop fs -ls /prueba
-# hadoop jar /vagrant/WordCountSimple/dprueba/WordCountSimple.jar /prueba /prueba/salida
+    - name: Change directory owner for vagrant user
+      command: sudo -u hdfs hadoop fs -chown $USER /user/$USER
