@@ -10,12 +10,6 @@
         name: openjdk-7-jdk
         state: present
 
-    - name: Set java home
-      lineinfile:
-        path: /etc/default/bigtop-utils
-        line: export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk-amd64
-        create: yes
-
     - name: Download CDH5 package
       get_url:
         url: http://archive.cloudera.com/cdh5/one-click-install/precise/amd64/cdh5-repository_1.0_all.deb
@@ -76,7 +70,7 @@
         - hadoop-0.20-mapreduce-tasktracker
 
     - name: Create user directories for vagrant user
-      command: sudo -u hdfs hadoop fs -mkdir -p /user/$USER
+      command: sudo -u hdfs hadoop fs -mkdir -p /user/vagrant
 
     - name: Change directory owner for vagrant user
-      command: sudo -u hdfs hadoop fs -chown $USER /user/$USER
+      command: sudo -u hdfs hadoop fs -chown vagrant /user/vagrant
